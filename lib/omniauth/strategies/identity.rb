@@ -60,7 +60,14 @@ module OmniAuth
 
       def registration_phase
         attributes = (options[:fields] + [:password, :password_confirmation]).inject({}){|h,k| h[k] = request[k.to_s]; h}
-        @identity = model.create(attributes)
+        if model.class.respond_to?(:has_secure_password)
+          @identity = model.build(attributes)
+          @identity.password = attributes[:password]
+          @identity.save
+        else
+          @identity = model.create(attributes)
+        end
+        
         if @identity.persisted?
           env['PATH_INFO'] = callback_path
           callback_phase
